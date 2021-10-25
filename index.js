@@ -1,6 +1,11 @@
 function solution(relation) {
     var answer = 0;
     const tuple = { group_by_row: [], group_by_col: [], };
+    const unique = function (arr) {
+        return arr.filter(function (val, i, self) {
+            return self.indexOf(val) === i;
+        });  
+    };
     const limitation = {
         _isMultiDimesionalSringsArray: function (arr) {
             if (Array.isArray(arr)) {
@@ -41,14 +46,8 @@ function solution(relation) {
             return arr.length >= 1 && arr.length <= 20;
         },
         _isUniqueTuplesName: function (arr) {
-            const unique = function (arr) {
-                return arr.filter(function (val, i, self) {
-                    return self.indexOf(val) === i;
-                }).length === arr.length
-            };
-            
             for (var col of arr) {
-                if (!unique(col)) {
+                if (!unique(col).length === col.length) {
                     return false;
                 }
             }
@@ -75,12 +74,15 @@ function solution(relation) {
                 const val = col[cc];
                 if (val) {
                     const val =`${col[c]}|${col[cc]}`; 
-                    temp.push(val)
+                    temp.push(val);
                 }
             }
             
             if (Boolean(temp.length)) {
-                tuple.group_by_col.push(temp)
+                tuple.group_by_col.push({
+                    count: temp.length,
+                    values: temp
+                });
             }
             
             if (tuple.group_by_row.length !== col.length) {
@@ -94,63 +96,47 @@ function solution(relation) {
     
     // Count unique group of relation by row
     for (var row of tuple.group_by_row) {
-        const unique = row.filter(function (val, i, self) {
-            return self.indexOf(val) === i;
-        });
-        
-        if (row.length === unique.length) {
+        if (row.length === unique(row).length) {
             answer += 1;
         }
     }
     
-    // Count unique group of relation by col
-    tuple.group_by_col.sort(function (a, b) {
-        return b.length - a.length;
-    })
-    nextLoop: for (var r = 0; r < tuple.group_by_col.length; r++) {
-        const next = tuple.group_by_col[r+1];
-        const cols = tuple.group_by_col.filter(function (item) {
-            return item.length === tuple.group_by_col[r].length;
-        });
-        
-        if (!next && (tuple.group_by_col[tuple.group_by_col.length-1] !== cols[0].length)) {
-            const unique = cols.filter(function (val, i, self) {
-                return self.indexOf(val) === i;
-            }).length;
-            answer += (cols.length === unique.length) ? 1 : 0;
-        } else if (next.length !== cols[0].length) {
-            for (var i = 0; i < cols.length; i++) {
-                const col = cols[i]
-                console.log(col);
-                // for (var i = 0; i < col.length; i++) {
-                // }
-            }
+    tuple.group_by_col = tuple.group_by_col.sort(function (a, b) {
+        return b.values.length - a.values.length;
+    }).reduce(function(rev, item) {
+        if (rev[item.count]) {
+            rev[item.count].push(item.values);
+        } else {
+            rev[item.count] = [];
+            rev[item.count].push(item.values);
         }
         
-        continue nextLoop;
-    }
+        return rev;
+     }, {});
+     
+     for (const key in tuple.group_by_col) {
+         const values = tuple.group_by_col[key];
+         
+         if (values[0].length > 1) {
+            const compares = []
+            for (var i = 0; i < values[0].length; i++) {
+                const val = values.map(function (item) {
+                    return item[i]
+                });
+                compares.push(`${val.length}-${unique(val).length}`);
+            }
+            answer += (compares.length === unique(compares).length)
+                ? 1
+                : 0;
+         } else {
+            const val = values.map(function (item) {
+                return item[0];
+            });
+            answer += (val.length === unique(val).length)
+                ? 1
+                : 0;
+         }
+     }
     
     return answer;
 }
-
-console.log(
-    solution([
-        ["100","spiderman","music", "2"],
-        ["200","ironman","math","2",],
-        ["300","superman","computer","3"],
-        ["400","batman","computer","4"],
-        ["500","hulk","music","3"],
-        ["600","ironman","music","2"],
-    ])
-);
-
-// console.log(
-//     solution([
-//         ["100", "ironman", "music", "2"],
-//         ["100", "ironman", "math", "2"],
-//         ["300", "superman", "computer", "3"],
-//         ["300", "superman", "computer", "4"],
-//         ["500", "hulk", "music", "3"],
-//         ["600", "ironman", "music", "2"]
-//     ])
-// );
